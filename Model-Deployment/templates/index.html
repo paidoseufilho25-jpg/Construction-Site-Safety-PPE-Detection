@@ -576,7 +576,7 @@
                 personsDiv.innerHTML = `
                     <div class="person-details ${details.is_compliant ? '' : 'non-compliant'}">
                         <div style="font-weight: 600; font-size: 14px;">
-                            ${statusIcon} Current Detection (${details.person_count || 0} person(s))
+                            ${statusIcon} Current Detection
                         </div>
                         ${ppeHtml}
                     </div>
@@ -595,20 +595,24 @@
                     document.getElementById('totalAlerts').textContent = data.total_alerts;
                     
                     devMode = data.dev_mode;
-                    const btn = document.getElementById('devModeBtn');
                     const indicator = document.getElementById('devModeIndicator');
+                    const btn = document.getElementById('devModeBtn');
                     if (devMode) {
-                        btn.classList.add('active');
                         indicator.style.display = 'inline-flex';
+                        if (btn) btn.classList.add('active');
                     } else {
-                        btn.classList.remove('active');
                         indicator.style.display = 'none';
+                        if (btn) btn.classList.remove('active');
                     }
-                });
+                })
+                .catch(error => console.error('Error fetching stats:', error));
         }
 
-        setInterval(updateStats, 5000);
-        updateStats();
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStats();
+            setInterval(updateStats, 5000);
+            document.getElementById('statusIndicator').classList.add('inactive');
+        });
     </script>
 </body>
 </html>

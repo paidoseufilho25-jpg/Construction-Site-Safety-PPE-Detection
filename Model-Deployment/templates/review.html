@@ -149,6 +149,8 @@
             overflow: hidden;
             border: 1px solid var(--border-color);
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         .instance-card:hover {
@@ -158,6 +160,9 @@
 
         .instance-content {
             padding: 16px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
         }
 
         .instance-header {
@@ -198,6 +203,7 @@
 
         .ppe-info {
             margin-top: 12px;
+            min-height: 60px;
         }
 
         .ppe-section {
@@ -230,7 +236,7 @@
         .instance-actions {
             display: flex;
             gap: 8px;
-            margin-top: 12px;
+            margin-top: auto;
             padding-top: 12px;
             border-top: 1px solid var(--border-color);
         }

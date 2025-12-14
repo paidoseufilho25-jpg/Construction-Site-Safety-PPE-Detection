@@ -2,6 +2,7 @@ import time
 from datetime import datetime
 import numpy as np
 import os
+import json
 
 class InstanceDetector:
     """Detect PPE compliance per instance with configurable settings"""
@@ -11,7 +12,7 @@ class InstanceDetector:
         self.last_non_compliant_time = 0
         self.last_activity_time = 0
         self.current_instance_id = None
-        self.instance_counter = 0
+        self.instance_serial = self._load_serial_counter()
         self.in_non_compliant_period = False
         self.snapshot_counter = 0
         
@@ -24,6 +25,44 @@ class InstanceDetector:
             'vest': True,
             'mask': False
         }
+    
+    def _load_serial_counter(self):
+        """Load the serial counter from file, reset if new day"""
+        counter_file = 'instance_counter.json'
+        today = datetime.now().strftime('%m_%d_%Y')
+        
+        try:
+            if os.path.exists(counter_file):
+                with open(counter_file, 'r') as f:
+                    data = json.load(f)
+                    # Check if it's the same day
+                    if data.get('date') == today:
+                        print(f"[InstanceDetector] Loaded serial counter: {data.get('serial', 0)} for {today}")
+                        return data.get('serial', 0)
+        except Exception as e:
+            print(f"[InstanceDetector] Error loading counter: {e}")
+        
+        # New day or no file, start fresh
+        print(f"[InstanceDetector] Starting new serial counter for {today}")
+        return 0
+    
+    def _save_serial_counter(self):
+        """Save the serial counter to file"""
+        counter_file = 'instance_counter.json'
+        today = datetime.now().strftime('%m_%d_%Y')
+        
+        try:
+            with open(counter_file, 'w') as f:
+                json.dump({'date': today, 'serial': self.instance_serial}, f)
+        except Exception as e:
+            print(f"[InstanceDetector] Error saving counter: {e}")
+    
+    def _generate_instance_id(self):
+        """Generate instance ID in format: MM_DD_YYYY_Serial"""
+        today = datetime.now().strftime('%m_%d_%Y')
+        self.instance_serial += 1
+        self._save_serial_counter()
+        return f"{today}_{self.instance_serial}"
     
     def update_settings(self, settings):
         """Update detection settings"""
@@ -105,10 +144,15 @@ class InstanceDetector:
             self.non_compliance_start_time = None
             is_compliant = True
         
+        filtered_detected_ppe = []
+        for ppe in detected_ppe:
+            # Remove no-hardhat, no-mask, no-vest from detected list
+            if not ppe.startswith('no-'):
+                filtered_detected_ppe.append(ppe)
+        
         if not is_compliant:
             if not self.in_non_compliant_period:
-                self.instance_counter += 1
-                self.current_instance_id = f"instance{self.instance_counter}"
+                self.current_instance_id = self._generate_instance_id()
                 self.in_non_compliant_period = True
                 self.snapshot_counter = 0
                 print(f"[InstanceDetector] New instance started: {self.current_instance_id}")
@@ -120,7 +164,7 @@ class InstanceDetector:
                 'has_person': True,
                 'is_compliant': False,
                 'missing_ppe': missing_ppe,
-                'detected_ppe': detected_ppe,
+                'detected_ppe': filtered_detected_ppe,
                 'should_capture': True
             }
         else:
@@ -137,7 +181,7 @@ class InstanceDetector:
                 'has_person': True,
                 'is_compliant': True,
                 'missing_ppe': [],
-                'detected_ppe': detected_ppe,
+                'detected_ppe': filtered_detected_ppe,
                 'should_capture': False
             }
     

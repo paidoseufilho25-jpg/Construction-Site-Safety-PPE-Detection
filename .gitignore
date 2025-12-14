@@ -3,5 +3,6 @@
 /Model-Deployment/snapshots
 /Model-Deployment/detections.db
 /Model-Deployment/settings.json
+/Model-Deployment/instance_counter.json
 *.pyc
 bugs.txt
