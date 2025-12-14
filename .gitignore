@@ -1,6 +1,7 @@
 /.venv
 /__pycache__
-/snapshots
-detections.db
-settings.json
+/Model-Deployment/snapshots
+/Model-Deployment/detections.db
+/Model-Deployment/settings.json
 *.pyc
+bugs.txt
