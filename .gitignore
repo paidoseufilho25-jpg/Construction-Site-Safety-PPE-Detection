@@ -6,4 +6,3 @@
 /Model-Deployment/instance_counter.json
 *.pyc
 bugs.txt
-*.cache
