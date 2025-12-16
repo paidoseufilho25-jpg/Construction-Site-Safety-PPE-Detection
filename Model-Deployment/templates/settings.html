@@ -181,6 +181,63 @@
             text-align: center;
         }
 
+        /* Added radio button styles */
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .radio-item:hover {
+            background: #edf2f7;
+        }
+
+        .radio-item.selected {
+            border-color: var(--accent-blue);
+            background: rgba(74, 144, 226, 0.05);
+        }
+
+        .radio-item input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent-blue);
+            cursor: pointer;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .radio-content {
+            flex: 1;
+        }
+
+        .radio-item label {
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: block;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .radio-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin: 0;
+        }
+
         .number-input-group {
             display: flex;
             align-items: center;
@@ -337,6 +394,37 @@
     </header>
 
     <div class="container">
+        <!-- Added detection mode card before the grid -->
+        <div class="card">
+            <div class="card-title">
+                <i class="fas fa-users"></i>
+                Detection Mode
+            </div>
+            <p class="setting-description">
+                Choose how the system handles multiple people in the frame.
+            </p>
+            <div class="radio-group">
+                <div class="radio-item" onclick="selectRadio('single')">
+                    <input type="radio" id="single" name="detectionMode" value="single" checked>
+                    <div class="radio-content">
+                        <label for="single">Single Person Detection</label>
+                        <p class="radio-description">If at least one required PPE item is detected, the person is marked as compliant. Best for monitoring individual compliance.</p>
+                    </div>
+                </div>
+                <div class="radio-item" onclick="selectRadio('multi')">
+                    <input type="radio" id="multi" name="detectionMode" value="multi">
+                    <div class="radio-content">
+                        <label for="multi">Multi-Person Detection</label>
+                        <p class="radio-description">When 1+ people are detected, all must wear required equipment. Anyone detected without required PPE marks the group as non-compliant.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="info-box">
+                <i class="fas fa-info-circle"></i>
+                <span>Multi-person mode requires detection of non-compliant equipment (no-hardhat/vest/mask) to flag violations when multiple people are present.</span>
+            </div>
+        </div>
+
         <div class="grid-2">
             <div class="card">
                 <div class="card-title">
@@ -431,6 +519,30 @@
     </div>
 
     <script>
+        function selectRadio(value) {
+            const radio = document.getElementById(value);
+            radio.checked = true;
+            updateRadioVisuals();
+        }
+
+        function updateRadioVisuals() {
+            document.querySelectorAll('.radio-item').forEach(item => {
+                const radio = item.querySelector('input[type="radio"]');
+                if (radio.checked) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        document.querySelectorAll('.radio-item input[type="radio"]').forEach(radio => {
+            radio.addEventListener('click', (e) => {
+                e.stopPropagation();
+                updateRadioVisuals();
+            });
+        });
+
         // Update checkbox visual state
         function updateCheckboxVisuals() {
             document.querySelectorAll('.checkbox-item').forEach(item => {
@@ -473,6 +585,8 @@
         }
 
         function getSettings() {
+            const detectionMode = document.querySelector('input[name="detectionMode"]:checked').value;
+            
             return {
                 required_ppe: {
                     helmet: document.getElementById('helmet').checked,
@@ -480,11 +594,19 @@
                     mask: document.getElementById('mask').checked
                 },
                 non_compliance_delay: parseFloat(document.getElementById('nonComplianceDelay').value) || 3,
-                instance_reset_timeout: parseInt(document.getElementById('instanceResetTimeout').value) || 5
+                instance_reset_timeout: parseInt(document.getElementById('instanceResetTimeout').value) || 5,
+                detection_mode: detectionMode
             };
         }
 
         function applySettings(settings) {
+            if (settings.detection_mode) {
+                const radio = document.getElementById(settings.detection_mode);
+                if (radio) {
+                    radio.checked = true;
+                }
+            }
+            
             // Apply PPE checkboxes
             if (settings.required_ppe) {
                 Object.keys(settings.required_ppe).forEach(key => {
@@ -503,6 +625,7 @@
                 document.getElementById('instanceResetTimeout').value = settings.instance_reset_timeout;
             }
             
+            updateRadioVisuals();
             updateCheckboxVisuals();
         }
 
@@ -561,6 +684,7 @@
         // Load settings on page load
         document.addEventListener('DOMContentLoaded', () => {
             loadSettings();
+            updateRadioVisuals();
         });
     </script>
 </body>

@@ -34,7 +34,8 @@ DEFAULT_SETTINGS = {
         'mask': False
     },
     'non_compliance_delay': 3,
-    'instance_reset_timeout': 5
+    'instance_reset_timeout': 5,
+    'detection_mode': 'single'  # 'single' or 'multi'
 }
 
 def load_settings():
@@ -62,7 +63,7 @@ current_settings = load_settings()
 def load_model():
     """Load YOLO model"""
     global model
-    model_path = '../Model-Training/Outputs/runs/detect/yolov8s_ppe_css_200_epochs/weights/best.pt'
+    model_path = '../Model-Training/Outputs/runs/detect/yolov8s_ppe_css_80_epochs/weights/best.pt'
     if os.path.exists(model_path):
         model = YOLO(model_path)
     else:

@@ -25,6 +25,7 @@ class InstanceDetector:
             'vest': True,
             'mask': False
         }
+        self.detection_mode = 'single'  # 'single' or 'multi'
     
     def _load_serial_counter(self):
         """Load the serial counter from file, reset if new day"""
@@ -72,7 +73,9 @@ class InstanceDetector:
             self.non_compliance_delay = settings['non_compliance_delay']
         if 'instance_reset_timeout' in settings:
             self.window_seconds = settings['instance_reset_timeout']
-        print(f"[InstanceDetector] Settings updated: delay={self.non_compliance_delay}s, timeout={self.window_seconds}s, ppe={self.required_ppe_settings}")
+        if 'detection_mode' in settings:
+            self.detection_mode = settings['detection_mode']
+        print(f"[InstanceDetector] Settings updated: delay={self.non_compliance_delay}s, timeout={self.window_seconds}s, ppe={self.required_ppe_settings}, mode={self.detection_mode}")
     
     def process_detection(self, all_detections, dev_mode=False, settings=None):
         """Process all detections and determine instance"""
@@ -107,6 +110,8 @@ class InstanceDetector:
         
         self.last_activity_time = current_time
         
+        person_count = sum(1 for d in all_detections if d['class'].lower() == 'person')
+        
         ppe_items = [d for d in all_detections if d['class'].lower() != 'person']
         detected_classes = [item['class'].lower() for item in ppe_items]
         detected_ppe = list(set(detected_classes))
@@ -119,14 +124,42 @@ class InstanceDetector:
             'mask': ['mask', 'face mask', 'face-mask', 'respirator']
         }
         
-        for ppe_type, is_required in self.required_ppe_settings.items():
-            if is_required:
-                class_names = ppe_class_mapping.get(ppe_type, [ppe_type])
-                found = any(cls in detected_classes for cls in class_names)
-                if not found:
-                    missing_ppe.append(ppe_type)
-        
-        raw_is_compliant = len(missing_ppe) == 0
+        if self.detection_mode == 'single':
+            # Single person mode: if at least one required PPE is detected, mark as compliant
+            for ppe_type, is_required in self.required_ppe_settings.items():
+                if is_required:
+                    class_names = ppe_class_mapping.get(ppe_type, [ppe_type])
+                    found = any(cls in detected_classes for cls in class_names)
+                    if not found:
+                        missing_ppe.append(ppe_type)
+            
+            raw_is_compliant = len(missing_ppe) == 0
+        else:
+            # Multi-person mode: ALL persons must have required PPE (works with 1+ persons)
+            # Count negative detections (no-hardhat, no-vest, no-mask)
+            no_helmet_count = sum(1 for cls in detected_classes if 'no-hardhat' in cls or 'no-helmet' in cls)
+            no_vest_count = sum(1 for cls in detected_classes if 'no-vest' in cls)
+            no_mask_count = sum(1 for cls in detected_classes if 'no-mask' in cls or 'no-face-mask' in cls)
+            
+            raw_is_compliant = True
+            
+            # Check if any person is detected without helmet (if helmet is required)
+            if self.required_ppe_settings.get('helmet', False) and no_helmet_count > 0:
+                raw_is_compliant = False
+                if 'helmet' not in missing_ppe:
+                    missing_ppe.append('helmet')
+            
+            # Check if any person is detected without vest (if vest is required)
+            if self.required_ppe_settings.get('vest', False) and no_vest_count > 0:
+                raw_is_compliant = False
+                if 'vest' not in missing_ppe:
+                    missing_ppe.append('vest')
+            
+            # Check if any person is detected without mask (if mask is required)
+            if self.required_ppe_settings.get('mask', False) and no_mask_count > 0:
+                raw_is_compliant = False
+                if 'mask' not in missing_ppe:
+                    missing_ppe.append('mask')
         
         if not raw_is_compliant:
             if not self.pending_non_compliant:
@@ -184,7 +217,7 @@ class InstanceDetector:
                 'detected_ppe': filtered_detected_ppe,
                 'should_capture': False
             }
-    
+
     def get_next_snapshot_filename(self):
         """Get next snapshot filename for current instance"""
         if self.current_instance_id:
