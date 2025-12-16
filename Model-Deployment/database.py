@@ -68,7 +68,7 @@ class Database:
                     INSERT INTO instances (instance_id, is_compliant, missing_ppe, detected_ppe)
                     VALUES (?, ?, ?, ?)
                 ''', (instance_id, False, ','.join(missing_ppe), ','.join(detected_ppe)))
-                print(f"[v0] Created new instance record: {instance_id}")
+                print(f"Created new instance record: {instance_id}")
             else:
                 c.execute('''
                     UPDATE instances 
@@ -83,7 +83,7 @@ class Database:
             
             conn.commit()
             conn.close()
-            print(f"[v0] Logged snapshot for {instance_id}: {snapshot_path}")
+            print(f"Logged snapshot for {instance_id}: {snapshot_path}")
             return True
         except Exception as e:
             print(f"Error logging instance snapshot: {e}")

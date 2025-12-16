@@ -258,12 +258,12 @@ class SnapshotManager:
             if frame is not None and frame.size > 0:
                 success = cv2.imwrite(filepath, frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
                 if success and os.path.exists(filepath):
-                    print(f"[v0] Snapshot saved: {filepath}")
+                    print(f"Snapshot saved: {filepath}")
                     return filepath
                 else:
-                    print(f"[v0] Failed to save snapshot: {filepath}")
+                    print(f"Failed to save snapshot: {filepath}")
             
             return None
         except Exception as e:
-            print(f"[v0] Error saving snapshot: {e}")
+            print(f"Error saving snapshot: {e}")
             return None
